@@ -185,6 +185,10 @@ h3{margin:4px 0 0;font-size:15px;font-weight:800}
 }
 @media (max-width:760px){#brand span{display:none}.stat.opt{display:none}#tState{display:none}}
 @media (prefers-reduced-motion:reduce){.caret::after{animation:none}#stage.shake #cur{animation:none}#bar i{transition:none}}
+.zbox{display:flex;flex-direction:column;gap:8px;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+input[type=text]{font:inherit;padding:6px 9px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);width:200px;font-family:var(--mono);font-size:13.5px}
+#zNum,#stNum{width:92px;font-family:var(--mono)}
+.stZip .lbl{font-size:13px}
 .sheet.start{max-width:760px;height:auto;max-height:100%;overflow-y:auto}
 .stInner{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:22px 20px 0}
 .stMark{font-size:64px;line-height:1;color:var(--accent)}
@@ -261,6 +265,12 @@ footer.credit{margin-top:44px;padding-bottom:24px;text-align:center;font-family:
       <h1>कृति टाइपिंग पैड</h1>
       <p class="stSub">मोबाइल + कीबोर्ड पर Kruti Dev 010 हिंदी टाइपिंग अभ्यास</p>
       <div class="stInfo" id="stInfo"></div>
+      <div class="row stBtns stZip">
+        <label class="lbl" for="stNum">पाठ संख्या</label>
+        <input type="number" id="stNum" min="1" max="999" placeholder="1–100">
+        <button class="btn" id="stLoad">यह पाठ लोड करें</button>
+        <button class="btn" id="stRand">रैंडम</button>
+      </div>
       <div class="row stBtns">
         <button class="btn pri big" id="bStart">शुरू करें <kbd>Enter</kbd></button>
         <button class="btn" data-act="settings">पाठ / सेटिंग्स <kbd>F1</kbd></button>
@@ -290,6 +300,22 @@ footer.credit{margin-top:44px;padding-bottom:24px;text-align:center;font-family:
           <input type="file" id="fileIn" accept=".txt,text/plain" hidden>
           <select id="sampleSel" aria-label="नमूना पाठ"><option value="">नमूना पाठ चुनें…</option></select>
           <button class="btn" id="bClear">साफ़ करें</button>
+        </div>
+        <div class="zbox">
+          <div class="row">
+            <span class="lbl">ZIP से पाठ</span>
+            <label class="lbl" for="zNum" style="font-weight:600">पाठ संख्या</label>
+            <input type="number" id="zNum" min="1" max="999" value="1">
+            <button class="btn pri" id="zLoad">लोड करें और शुरू करें</button>
+            <button class="btn" id="zRand">रैंडम पाठ</button>
+          </div>
+          <div class="row">
+            <label class="lbl" for="zPath">ZIP फ़ाइल का नाम / पाथ</label>
+            <input type="text" id="zPath" data-k="zipPath" spellcheck="false" autocomplete="off">
+            <label class="btn" for="zFile">फ़ोन से ZIP चुनें</label>
+            <input type="file" id="zFile" accept=".zip,application/zip" hidden>
+          </div>
+          <div class="note" id="zInfo">GitHub पर HTML के साथ उसी फ़ोल्डर में passages.zip अपलोड करें। ZIP के अंदर 1.txt, 2.txt … नाम की फ़ाइलें हों।</div>
         </div>
         <div class="field" style="flex:1">
           <label class="lbl" for="pText">पाठ (यूनिकोड हिंदी या कृति देव — दोनों चलेंगे)</label>
@@ -529,7 +555,7 @@ const BANK = ('आज हमारी छुट्टी है घर विद
 
 /* ================= Settings ================= */
 const DEF = {mode:'stop', minutes:10, backspace:true, tabInsert:true, simplify:false, engDigits:true, autoHint:true, sound:true, vibrate:true,
-             fs:0, visible:'3', upcoming:false, hint:false, kbd:false, theme:'auto', inputType:'auto'};
+             fs:0, visible:'3', upcoming:false, hint:false, kbd:false, theme:'auto', inputType:'auto', zipPath:'passages.zip'};
 const cfg = Object.assign({}, DEF, LS.get('cfg', {}));
 const saveCfg = () => LS.set('cfg', cfg);
 let passage = LS.get('passage', null) || {name: SAMPLES[0].name, text: SAMPLES[0].text};
@@ -772,7 +798,7 @@ function finish(timeUp) {
     tile('समय', fmtMin(S.acc), '') + tile('कुल स्ट्रोक', S.keys, S.tabs ? S.tabs + ' Tab सहायता' : '') + '</div>';
   h += '<h3>इस बार की कठिन कुंजियाँ</h3>' + (top.length ? dkTable(top) : '<p class="note">कोई कुंजी खास कठिन नहीं रही — बढ़िया!</p>');
   if (wrong.length) h += '<h3>गलत शब्द</h3><div class="ww">' + wrong.slice(0, 30).map(([w, t]) => `<span><b>${esc(w)}</b><s>${esc(t || '—')}</s></span>`).join('') + '</div>';
-  h += '<div class="row"><button class="btn pri" data-act="restart">फिर से <kbd>F5</kbd></button><button class="btn" data-act="practice">कठिन कुंजी अभ्यास <kbd>F8</kbd></button><button class="btn" data-act="settings">नया पाठ <kbd>F1</kbd></button></div>';
+  h += '<div class="row"><button class="btn pri" data-act="restart">फिर से <kbd>F5</kbd></button><button class="btn" data-act="practice">कठिन कुंजी अभ्यास <kbd>F8</kbd></button><button class="btn" data-act="settings">नया पाठ <kbd>F1</kbd></button>' + (passage.num && !S.practice ? `<button class="btn" data-act="nextNum">अगला पाठ (${passage.num + 1}) <kbd>N</kbd></button>` : '') + '</div>';
   $('#resBody').innerHTML = h;
   openPanel('pResults');
 }
@@ -850,6 +876,7 @@ $$('[data-k]').forEach(el => el.addEventListener('change', () => {
   const k = el.dataset.k;
   if (el.type === 'checkbox') cfg[k] = el.checked;
   else if (el.type === 'radio') { if (!el.checked) return; cfg[k] = el.value; }
+  else if (el.type === 'text') cfg[k] = el.value.trim() || DEF[k];
   else cfg[k] = Math.max(0, Math.min(120, parseInt(el.value, 10) || 0));
   saveCfg(); applyTheme();
   if (k === 'inputType' || k === 'simplify' || k === 'engDigits') previewPassage();
@@ -898,6 +925,7 @@ document.addEventListener('click', e => {
   if (act === 'restart') restart();
   else if (act === 'practice') buildPractice();
   else if (act === 'settings') { openPanel('pSettings'); showTab('t1'); }
+  else if (act === 'nextNum') loadNum(passage.num + 1, true);
   else if (act === 'resetStats') {
     if (a.dataset.armed) { keyStats = {}; history = []; LS.set('keys', {}); LS.set('hist', []); S.sess = {}; toast('आँकड़े मिटा दिए'); showReport(); }
     else { a.dataset.armed = '1'; a.textContent = 'पक्का? फिर से दबाएँ'; }
@@ -952,6 +980,10 @@ addEventListener('keydown', e => {
   if (k === 'Escape') { e.preventDefault(); if (anyPanel()) closePanels(); else togglePause(); return; }
   if (anyPanel()) {
     if (!$('#pStart').hidden) {
+      if (document.activeElement && document.activeElement.id === 'stNum') {
+        if (k === 'Enter') { e.preventDefault(); const n = parseInt($('#stNum').value, 10); if (n > 0) loadNum(n, true); else startApp(); }
+        return;
+      }
       if (k === 'Enter' || k === ' ') { e.preventDefault(); startApp(); }
       return;
     }
@@ -961,7 +993,8 @@ addEventListener('keydown', e => {
         e.preventDefault(); const tabs = $$('#pSettings .tab'); const i = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
         const n = tabs[(i + (k === 'PageDown' ? 1 : tabs.length - 1)) % tabs.length]; showTab(n.dataset.tab); n.focus();
       }
-    } else if (!$('#pResults').hidden && k === 'Enter' && !(document.activeElement && document.activeElement.tagName === 'BUTTON')) { e.preventDefault(); restart(); }
+    } else if (!$('#pResults').hidden && (k === 'n' || k === 'N') && passage.num && !S.practice) { e.preventDefault(); loadNum(passage.num + 1, true); }
+    else if (!$('#pResults').hidden && k === 'Enter' && !(document.activeElement && document.activeElement.tagName === 'BUTTON')) { e.preventDefault(); restart(); }
     return;
   }
   if (e.ctrlKey || e.metaKey) return;
@@ -1011,6 +1044,87 @@ $('#bMinus').addEventListener('click', () => { setFs(-8); focusSink(); });
 $('#bPlus2').addEventListener('click', () => setFs(8));
 $('#bMinus2').addEventListener('click', () => setFs(-8));
 PANELS.forEach(id => $('#' + id).addEventListener('click', e => { if (e.target.id === id && id !== 'pStart') closePanels(); }));
+/* ================= ZIP passages ================= */
+let zipCache = null; // {src, z}
+async function readZip(buf) {
+  const dv = new DataView(buf); let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('यह ZIP फ़ाइल नहीं लगती');
+  const cnt = dv.getUint16(eocd + 10, true); let p = dv.getUint32(eocd + 16, true);
+  const files = {}, td = new TextDecoder();
+  for (let k = 0; k < cnt; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true), lho = dv.getUint32(p + 42, true);
+    const name = td.decode(new Uint8Array(buf, p + 46, nlen)).split('/').pop().toLowerCase();
+    if (name && !name.startsWith('._')) files[name] = {method, csize, lho};
+    p += 46 + nlen + xlen + clen;
+  }
+  const nums = Object.keys(files).map(n => /^(\d+)\.txt$/.exec(n)).filter(Boolean).map(m => +m[1]).sort((a, b) => a - b);
+  return {buf, dv, files, nums};
+}
+async function zipText(z, n) {
+  const f = z.files[n + '.txt']; if (!f) return null;
+  const start = f.lho + 30 + z.dv.getUint16(f.lho + 26, true) + z.dv.getUint16(f.lho + 28, true);
+  let data = new Uint8Array(z.buf, start, f.csize);
+  if (f.method === 8) {
+    if (!('DecompressionStream' in window)) throw new Error('यह ब्राउज़र ZIP खोल नहीं पा रहा — Chrome अपडेट करें');
+    data = new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  } else if (f.method !== 0) throw new Error('ZIP का यह कम्प्रेशन तरीका समर्थित नहीं');
+  return new TextDecoder('utf-8').decode(data);
+}
+async function getZip() {
+  if (zipCache && (zipCache.src === cfg.zipPath || zipCache.src === 'local')) return zipCache.z;
+  const r = await fetch(cfg.zipPath, {cache: 'no-cache'});
+  if (!r.ok) throw new Error(cfg.zipPath + ' नहीं मिली (' + r.status + ')');
+  const z = await readZip(await r.arrayBuffer());
+  zipCache = {src: cfg.zipPath, z}; zipInfo(z, cfg.zipPath);
+  return z;
+}
+function zipInfo(z, label) {
+  const t = `${label}: ${z.nums.length} पाठ मिले` + (z.nums.length ? ` (${z.nums[0]}–${z.nums[z.nums.length - 1]})` : '');
+  $('#zInfo').textContent = t; $('#stNum').placeholder = z.nums.length ? z.nums[0] + '–' + z.nums[z.nums.length - 1] : '1–100';
+}
+async function fetchLoose(n) { // fallback: plain .txt files in the repo
+  for (const u of ['passages/' + n + '.txt', n + '.txt']) {
+    try { const r = await fetch(u, {cache: 'no-cache'}); if (r.ok) return await r.text(); } catch (e) {}
+  }
+  return null;
+}
+let loadingNum = false;
+async function loadNum(n, start) {
+  n = parseInt(n, 10);
+  if (!(n > 0) || loadingNum) return;
+  loadingNum = true; toast('पाठ ' + n + ' लोड हो रहा है…', 4000);
+  let text = null, err = '';
+  try { const z = await getZip(); text = await zipText(z, n); if (text == null) err = 'ZIP में ' + n + '.txt नहीं है'; }
+  catch (e) { err = e.message || String(e); }
+  if (text == null) { const t = await fetchLoose(n); if (t != null) { text = t; err = ''; } }
+  loadingNum = false;
+  if (text == null || !text.trim()) {
+    const local = location.protocol === 'file:' ? ' फ़ाइल सीधे खोलने पर ब्राउज़र ZIP नहीं पढ़ने देता — GitHub Pages लिंक से खोलें या "फ़ोन से ZIP चुनें" दबाएँ।' : '';
+    toast((err || 'पाठ नहीं मिला') + '।' + local, 5000); return;
+  }
+  LS.set('num', n); $('#zNum').value = n; $('#stNum').value = n;
+  const ok = loadPassage({name: 'पाठ ' + n, text: text.trim(), num: n}, false);
+  if (ok) { $('#pText').value = text.trim(); toast('पाठ ' + n + ' तैयार · ' + S.words.length + ' शब्द', 1500); if (start) closePanels(); else startInfo(); }
+}
+async function loadRandom(start) {
+  try { const z = await getZip(); if (z.nums.length) return loadNum(z.nums[Math.floor(Math.random() * z.nums.length)], start); } catch (e) {}
+  loadNum(1 + Math.floor(Math.random() * 100), start);
+}
+$('#zLoad').addEventListener('click', () => loadNum($('#zNum').value, true));
+$('#zRand').addEventListener('click', () => loadRandom(true));
+$('#stLoad').addEventListener('click', () => { const n = parseInt($('#stNum').value, 10); if (n > 0) loadNum(n, false); else $('#stNum').focus(); });
+$('#stRand').addEventListener('click', () => loadRandom(false));
+$('#zNum').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); loadNum($('#zNum').value, true); } });
+$('#zPath').addEventListener('change', () => { zipCache = null; });
+$('#zFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { const z = await readZip(await f.arrayBuffer()); zipCache = {src: 'local', z}; zipInfo(z, f.name); toast(f.name + ': ' + z.nums.length + ' पाठ मिले — अब संख्या चुनें'); }
+  catch (err) { toast(err.message || 'ZIP नहीं खुली'); }
+  e.target.value = '';
+});
+
 function startApp() { if ($('#pStart').hidden) return; closePanels(); }
 $('#bStart').addEventListener('click', startApp);
 $('#bFs2').addEventListener('click', () => toggleFull());
@@ -1027,6 +1141,7 @@ applyTheme(); buildKbd();
 loadPassage(passage, false);
 applyFs();
 document.fonts && document.fonts.ready.then(() => render());
+{ const ln = LS.get('num', 0); if (ln) { $('#zNum').value = ln; $('#stNum').value = ln; } }
 startInfo();
 setTimeout(() => $('#bStart').focus({preventScroll: true}), 50);
 })();
