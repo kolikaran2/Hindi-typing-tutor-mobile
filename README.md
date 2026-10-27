@@ -1,4 +1,5 @@
 # Kruti Typing Pad (कृति टाइपिंग पैड)
+## 🔗 [Open Hindi Typing Tutor](https://kolikaran2.github.io/Hindi-typing-tutor-mobile/)
 
 A Kruti Dev 010 Hindi typing tutor for a mobile phone held in landscape with a keyboard attached (Bluetooth or USB OTG). It also works on a desktop browser.
 
